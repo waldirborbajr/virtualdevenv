@@ -1,0 +1,42 @@
+# Ignorar binários locais e pasta bin
+/bin/
+/out/
+/app
+
+# Ignorar arquivos de build e cache do Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Ignorar mod cache local e vendor caso não queira copiar
+/vendor/
+/pkg/
+
+# Ignorar arquivos de configuração locais e IDEs
+.env
+*.env
+*.local
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Ignorar logs e arquivos temporários
+*.log
+*.tmp
+*.swp
+*~
+
+# Ignorar arquivos e pastas do Docker Compose e overrides locais
+docker-compose.override.yml
+.dockerignore
+
+# Ignorar arquivos de configuração de ferramentas de desenvolvimento
+.air.toml
+
+# Ignorar arquivos relacionados a testes locais e relatórios
+coverage.out

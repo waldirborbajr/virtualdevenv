@@ -1,0 +1,79 @@
+# Define project name
+PROJECT_NAME=omniapi
+
+# Mark targets as phony (not file-based)
+.PHONY: up down restart logs artisan composer route install tinker migrate bash prune inspect
+
+# ===============================
+# Configurações da rede macvlan
+# ===============================
+HOST_IFACE ?= enp3s0f0          # interface física do host (ajuste para sua máquina)
+HOST_MACVLAN_IP ?= 192.168.0.19 # IP livre na sua rede para o host falar com containers
+HOST_NETMASK ?= 24              # máscara da rede (ex: /24)
+
+# ===============================
+# Rede host <-> macvlan
+# ===============================
+vlan:
+	@echo ">> Creating macvlan interface on host..."
+	@if ip link show macvlan0 >/dev/null 2>&1; then \
+		echo "macvlan0 already exists. Skipping."; \
+	else \
+		sudo ip link add macvlan0 link $(HOST_IFACE) type macvlan mode bridge && \
+		sudo ip addr add $(HOST_MACVLAN_IP)/$(HOST_NETMASK) dev macvlan0 && \
+		sudo ip link set macvlan0 up && \
+		echo "macvlan0 created with IP $(HOST_MACVLAN_IP)/$(HOST_NETMASK)"; \
+	fi
+
+up: vlan
+	docker compose up --build --force-recreate
+	$(MAKE) test-net   # valida rede após subir os containers
+
+down:
+	docker compose down --rmi all --remove-orphans
+
+restart: down up
+
+logs:
+	docker compose logs -f $(PROJECT_NAME)
+
+artisan:
+	docker compose exec $(PROJECT_NAME) php artisan $(cmd)
+
+composer:
+	docker compose exec $(PROJECT_NAME) composer $(cmd)
+
+install:
+	docker compose exec $(PROJECT_NAME) composer install
+
+tinker:
+	docker compose exec -it $(PROJECT_NAME) php artisan tinker
+
+migrate:
+	docker compose exec -it $(PROJECT_NAME) php artisan migrate
+
+bash:
+	docker compose exec -it $(PROJECT_NAME) bash
+
+prune:
+	docker compose down -v --rmi all || true
+	docker network rm omni-api-master_laravel-network || true
+	docker system prune -af --volumes
+
+inspect:
+	docker inspect omniapi --format='{{.State.Health.Status}}'
+
+ip:
+	docker inspect omniapi | grep IPAddress	
+
+# ===============================
+# Testes de conectividade
+# ===============================
+
+test-net:
+	@echo ">> Testing connectivity to container at $(CONTAINER_IP)..."
+	@if ping -c 2 $(CONTAINER_IP) >/dev/null 2>&1; then \
+		echo "✅ Host can reach container $(CONTAINER_IP)"; \
+	else \
+		echo "❌ Failed to reach container $(CONTAINER_IP). Check macvlan setup."; \
+	fi	

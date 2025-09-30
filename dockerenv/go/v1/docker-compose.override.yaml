@@ -1,0 +1,36 @@
+# 4️⃣ docker-compose.override.yml (desenvolvimento)
+version: "3.9"
+services:
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile.dev
+    volumes:
+      - $HOME/prj/sync/user-service:/app
+    environment:
+      GO_ENV: development
+      LOG_LEVEL: debug
+      DB_TYPE: mariadb
+      DB_HOST: user-db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: userdb
+    command: air -c .air.toml
+
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile.dev
+    volumes:
+      - $HOME/prj/sync/order-service:/app
+    environment:
+      GO_ENV: development
+      LOG_LEVEL: debug
+      DB_TYPE: postgres
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: orderdb
+    command: air -c .air.toml

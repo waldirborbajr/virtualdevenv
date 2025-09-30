@@ -1,0 +1,87 @@
+# 3️⃣ docker-compose.yml (multi-serviço + MariaDB + PostgreSQL)
+version: "3.9"
+
+x-go-service: &go-service
+  build: .
+  environment:
+    - GO_ENV=production
+    - LOG_LEVEL=${LOG_LEVEL:-info}
+  ports:
+    - "8080:8080"
+  restart: unless-stopped
+  networks:
+    - internal_net
+
+x-db-mariadb: &db-mariadb
+  image: mariadb:11
+  environment:
+    MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+  volumes:
+    - ${DB_VOLUME}:/var/lib/mysql
+  networks:
+    - internal_net
+  restart: unless-stopped
+
+x-db-postgres: &db-postgres
+  image: postgres:16
+  environment:
+    POSTGRES_USER: ${PG_USER:-postgres}
+    POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
+    POSTGRES_DB: ${PG_DB:-appdb}
+  volumes:
+    - ${PG_VOLUME}:/var/lib/postgresql/data
+  networks:
+    - internal_net
+  restart: unless-stopped
+
+networks:
+  internal_net:
+
+volumes:
+  user_service_mariadb:
+  order_service_pg:
+
+services:
+  # Serviços Go
+  user-service:
+    <<: *go-service
+    environment:
+      DB_TYPE: mariadb
+      DB_HOST: user-db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+      DB_NAME: userdb
+    depends_on:
+      - user-db
+
+  order-service:
+    <<: *go-service
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_USER: ${PG_USER:-postgres}
+      DB_PASSWORD: ${PG_PASSWORD:-postgres}
+      DB_NAME: orderdb
+    depends_on:
+      - order-db
+    ports:
+      - "8081:8080"
+
+  # MariaDB
+  user-db:
+    <<: *db-mariadb
+    environment:
+      MYSQL_DATABASE: userdb
+    volumes:
+      - user_service_mariadb:/var/lib/mysql
+
+  # PostgreSQL
+  order-db:
+    <<: *db-postgres
+    environment:
+      POSTGRES_DB: orderdb
+    volumes:
+      - order_service_pg:/var/lib/postgresql/data
+

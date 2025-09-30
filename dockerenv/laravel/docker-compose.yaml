@@ -1,0 +1,37 @@
+services:
+  omniapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: omniapi
+    hostname: omniapi
+    image: ${PROJECT_NAME:-omniapi}:latest
+    working_dir: /var/www/html
+    volumes:
+      - ${PWD}:/var/www/html
+    environment:
+      APP_ENV: development
+      COMPOSER_MEMORY_LIMIT: -1
+    command: >
+      sh -c "composer install --no-interaction --prefer-dist --ignore-platform-reqs &&
+             php artisan key:generate --force || true &&
+             php artisan serve --host=0.0.0.0 --port=8012"
+    networks:
+      omnidev:
+        ipv4_address: 192.168.0.17
+      brdev: {}  # conecta também na rede bridge definida por nós
+
+networks:
+  omnidev:
+    driver: macvlan
+    driver_opts:
+      parent: enp3s0f0   # 🔧 ajuste para sua interface real do host
+    ipam:
+      config:
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1   # 🔧 gateway do seu roteador
+  brdev:
+    driver: bridge

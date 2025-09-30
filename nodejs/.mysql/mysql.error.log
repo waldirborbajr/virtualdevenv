@@ -1,0 +1,14 @@
+2025-09-30  1:43:03 0 [Note] Starting MariaDB 10.11.14-MariaDB source revision 053f9bcb5b147bf00edb99e1310bae9125b7f125 server_uid cOjJS4qROKR+yzsJsSvdSDpr9/E= as process 166523
+2025-09-30  1:43:03 0 [Note] InnoDB: Compressed tables use zlib 1.3.1
+2025-09-30  1:43:03 0 [Note] InnoDB: Number of transaction pools: 1
+2025-09-30  1:43:03 0 [Note] InnoDB: Using crc32 + pclmulqdq instructions
+2025-09-30  1:43:03 0 [ERROR] mysqld: Can't create/write to file '/home/borba/prj/nodejs/.mysql/tmp/ibCcFCWQ' (Errcode: 2 "No such file or directory")
+2025-09-30  1:43:03 0 [ERROR] InnoDB: Unable to create temporary file; errno: 2
+2025-09-30  1:43:03 0 [ERROR] mysqld: Can't create/write to file '/home/borba/prj/nodejs/.mysql/tmp/ibIe3b5e' (Errcode: 2 "No such file or directory")
+2025-09-30  1:43:03 0 [ERROR] InnoDB: Unable to create temporary file; errno: 2
+2025-09-30  1:43:03 0 [ERROR] InnoDB: Plugin initialization aborted with error Generic error
+2025-09-30  1:43:03 0 [Note] InnoDB: Starting shutdown...
+2025-09-30  1:43:03 0 [ERROR] Plugin 'InnoDB' registration as a STORAGE ENGINE failed.
+2025-09-30  1:43:03 0 [Note] Plugin 'FEEDBACK' is disabled.
+2025-09-30  1:43:03 0 [ERROR] Unknown/unsupported storage engine: InnoDB
+2025-09-30  1:43:03 0 [ERROR] Aborting

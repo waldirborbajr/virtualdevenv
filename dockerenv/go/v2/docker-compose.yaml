@@ -1,0 +1,88 @@
+# 3️⃣ docker-compose.yml (multi-serviço + MariaDB + PostgreSQL)
+version: "3.9"
+
+x-go-service: &go-service
+  build: .
+  environment:
+    - GO_ENV=production
+    - LOG_LEVEL=${LOG_LEVEL:-info}
+  ports:
+    - "8080:8080"
+  restart: unless-stopped
+  networks:
+    - internal_net
+
+x-db-mariadb: &db-mariadb
+  image: mariadb:11
+  environment:
+    MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    MYSQL_DATABASE: ${DB_NAME:-userdb}
+  volumes:
+    - ${DB_VOLUME}:/var/lib/mysql
+  networks:
+    - internal_net
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+x-db-postgres: &db-postgres
+  image: postgres:16
+  environment:
+    POSTGRES_USER: ${PG_USER:-postgres}
+    POSTGRES_PASSWORD: ${PG_PASSWORD:-postgres}
+    POSTGRES_DB: ${PG_DB:-orderdb}
+  volumes:
+    - ${PG_VOLUME}:/var/lib/postgresql/data
+  networks:
+    - internal_net
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-postgres}"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+networks:
+  internal_net:
+
+volumes:
+  user_service_mariadb:
+  order_service_pg:
+
+services:
+  user-service:
+    <<: *go-service
+    environment:
+      - DB_TYPE=mariadb
+      - DB_HOST=user-db
+      - DB_PORT=3306
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-root}
+      - DB_NAME=${DB_NAME:-userdb}
+    depends_on:
+      user-db:
+        condition: service_healthy
+
+  order-service:
+    <<: *go-service
+    ports:
+      - "8081:8080"
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=order-db
+      - DB_PORT=5432
+      - DB_USER=${PG_USER:-postgres}
+      - DB_PASSWORD=${PG_PASSWORD:-postgres}
+      - DB_NAME=${PG_DB:-orderdb}
+    depends_on:
+      order-db:
+        condition: service_healthy
+
+  user-db:
+    <<: *db-mariadb
+
+  order-db:
+    <<: *db-postgres
