@@ -25,7 +25,7 @@ pkgs.mkShell {
   shellHook = ''
     export GOPATH="$HOME/go"
     export GOBIN="$GOPATH/bin"
-    export PATH="$PATH:$GOBIN"
+    export PATH="$GOBIN:$PATH"
 
     export EDITOR="nvim"
     export NVIM_CONFIG_DIR="$HOME/.config/nvim"
@@ -64,6 +64,10 @@ pkgs.mkShell {
     ssh-add -q "$NIX_SSH_KEY" 2>/dev/null || true
     echo "🔑 Persistent SSH key loaded into agent (SSH_AGENT_PID=$SSH_AGENT_PID)."
 
+    # Ensure Git inside nix-shell uses the SSH key and ignores host configs
+    export PATH="${pkgs.openssh}/bin:$PATH"   # Force nix-shell ssh
+    export GIT_SSH_COMMAND="ssh -i $NIX_SSH_KEY -o IdentitiesOnly=yes -F /dev/null"
+
     # Install staticcheck if missing
     if ! command -v staticcheck >/dev/null 2>&1; then
       echo "⚙️ Installing staticcheck (Go tool)..."
@@ -73,7 +77,6 @@ pkgs.mkShell {
     # GitHub CLI: login via SSH if not authenticated
     if ! gh auth status >/dev/null 2>&1; then
       echo "ℹ️ GitHub CLI not authenticated. You can run 'gh auth login --ssh' after adding your public key."
-      export GIT_SSH_COMMAND="ssh -i $NIX_SSH_KEY -o IdentitiesOnly=yes"
     else
       echo "✅ GitHub CLI already authenticated."
     fi
@@ -84,6 +87,7 @@ pkgs.mkShell {
     echo "   - Neovim config: $NVIM_CONFIG_DIR"
     echo "   - Persistent SSH key: $NIX_SSH_KEY"
     echo "   - GitHub CLI: $(gh --version 2>/dev/null || echo 'not found')"
+    echo "   - Git commands inside nix-shell will use the shell SSH key"
     echo
   '';
 }
