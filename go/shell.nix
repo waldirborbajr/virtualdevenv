@@ -30,16 +30,13 @@ pkgs.mkShell {
     export EDITOR="nvim"
     export NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
-    # Persistent SSH key path
     export NIX_SSH_KEY="$HOME/.ssh/nix_shell_id_ed25519"
 
-    # Create .ssh folder only if it doesn't exist
     if [ ! -d "$HOME/.ssh" ]; then
       mkdir -p "$HOME/.ssh"
       chmod 700 "$HOME/.ssh"
     fi
 
-    # Generate SSH key if missing
     if [ ! -f "$NIX_SSH_KEY" ]; then
       echo "🔐 Generating persistent SSH key ed25519 at $NIX_SSH_KEY..."
       ssh-keygen -t ed25519 -C "nix-shell-generated-key" -f "$NIX_SSH_KEY" -N "" >/dev/null 2>&1
@@ -50,36 +47,77 @@ pkgs.mkShell {
       echo "📋 Copy this public key and add it to your GitHub account:"
       cat "$NIX_SSH_KEY.pub"
       echo
-      echo "🔑 After adding to GitHub, you can use 'gh auth login --ssh' or normal git SSH access."
     else
       echo "🔁 Using existing persistent SSH key at $NIX_SSH_KEY"
     fi
 
-    # Start ssh-agent if not running
     if [ -z "$SSH_AUTH_SOCK" ] || ! ssh-add -l >/dev/null 2>&1; then
       eval "$(ssh-agent -s)" >/dev/null 2>&1
     fi
 
-    # Add key to ssh-agent (ignore error if already added)
     ssh-add -q "$NIX_SSH_KEY" 2>/dev/null || true
-    echo "🔑 Persistent SSH key loaded into agent (SSH_AGENT_PID=$SSH_AGENT_PID)."
-
-    # Ensure Git inside nix-shell uses the SSH key and ignores host configs
-    export PATH="${pkgs.openssh}/bin:$PATH"   # Force nix-shell ssh
+    export PATH="${pkgs.openssh}/bin:$PATH"
     export GIT_SSH_COMMAND="ssh -i $NIX_SSH_KEY -o IdentitiesOnly=yes -F /dev/null"
 
-    # Install staticcheck if missing
     if ! command -v staticcheck >/dev/null 2>&1; then
-      echo "⚙️ Installing staticcheck (Go tool)..."
       go install honnef.co/go/tools/cmd/staticcheck@latest >/dev/null 2>&1 || true
     fi
 
-    # GitHub CLI: login via SSH if not authenticated
+    SSH_OK=false
     if ! gh auth status >/dev/null 2>&1; then
-      echo "ℹ️ GitHub CLI not authenticated. You can run 'gh auth login --ssh' after adding your public key."
+      if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
+        echo "🎉 SSH key works with GitHub!"
+        echo | gh auth login --hostname github.com --ssh >/dev/null 2>&1 && echo "✅ GitHub CLI logged in via SSH"
+        SSH_OK=true
+      else
+        echo -e "\e[41;97m ⚠️ SSH key not added to GitHub! Copy $NIX_SSH_KEY.pub to GitHub ⚠️ \e[0m"
+      fi
     else
-      echo "✅ GitHub CLI already authenticated."
+      SSH_OK=true
     fi
+
+    # Simplified git branch function
+    parse_git_branch() {
+      git branch 2>/dev/null | grep '^\*' | cut -d' ' -f2-
+    }
+
+    # Simplified git status function
+    git_status_symbol() {
+      if git rev-parse --git-dir >/dev/null 2>&1; then
+        if git diff --quiet --cached 2>/dev/null && git diff --quiet 2>/dev/null; then
+          echo "✔"
+        else
+          echo "✗"
+        fi
+      else
+        echo ""
+      fi
+    }
+
+    # Set PS1 with proper escaping
+    set_ps1() {
+      local current_dir="''${PWD##*/}"
+      local branch=""
+      local status=""
+      
+      if git rev-parse --git-dir >/dev/null 2>&1; then
+        branch=$(parse_git_branch)
+        status=$(git_status_symbol)
+      fi
+      
+      if [ -n "$branch" ]; then
+        if [ "$SSH_OK" = true ]; then
+          PS1="\[\e[32m\][nix-shell]\[\e[0m\]:~/$current_dir \[\e[34m\]$branch\[\e[0m\] $status\$ "
+        else
+          PS1="\[\e[32m\][nix-shell]\[\e[0m\]:~/$current_dir \[\e[31m\]NO SSH KEY!\[\e[0m\]\$ "
+        fi
+      else
+        PS1="\[\e[32m\][nix-shell]\[\e[0m\]:~/$current_dir \$ "
+      fi
+    }
+
+    # Use PROMPT_COMMAND to update PS1 dynamically
+    export PROMPT_COMMAND="set_ps1"
 
     echo
     echo "🚀 Go development shell ready!"
@@ -87,8 +125,7 @@ pkgs.mkShell {
     echo "   - Neovim config: $NVIM_CONFIG_DIR"
     echo "   - Persistent SSH key: $NIX_SSH_KEY"
     echo "   - GitHub CLI: $(gh --version 2>/dev/null || echo 'not found')"
-    echo "   - Git commands inside nix-shell will use the shell SSH key"
+    echo "   - Git branch display: enabled"
     echo
   '';
 }
-
