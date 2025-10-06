@@ -20,6 +20,9 @@ pkgs.mkShell {
     gnumake
     bashInteractive
     neovim
+    air         # Live reload for Go apps
+    go-task     # Task runner for Go projects
+    fzf         # Fuzzy finder for Git
   ] ++ staticcheckPkg;
 
   shellHook = ''
@@ -63,6 +66,14 @@ pkgs.mkShell {
       go install honnef.co/go/tools/cmd/staticcheck@latest >/dev/null 2>&1 || true
     fi
 
+    if ! command -v mockery >/dev/null 2>&1; then
+      go install github.com/vektra/mockery/v2/cmd/mockery@latest >/dev/null 2>&1 || true
+    fi
+
+    if ! command -v gotests >/dev/null 2>&1; then
+      go install github.com/cweill/gotests/gotests@latest >/dev/null 2>&1 || true
+    fi
+
     SSH_OK=false
     if ! gh auth status >/dev/null 2>&1; then
       if ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
@@ -89,7 +100,17 @@ pkgs.mkShell {
     git config --global alias.lg "log --oneline --graph --decorate"
     git config --global alias.unstage "reset HEAD --"
     git config --global alias.last "log -1 HEAD"
-    echo "✅ Git aliases configured (use 'git st', 'git sw <branch>', etc.)"
+    git config --global alias.brf "branch --list | fzf | xargs git switch"
+    echo "✅ Git aliases configured (use 'git st', 'git sw <branch>', 'git brf' for fuzzy branches, etc.)"
+
+    # FZF configuration
+    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border"
+
+    # Test generation function
+    gen_tests() {
+      gotests -all -w .
+      echo "✅ Tests generated!"
+    }
 
     # Simplified git branch function
     parse_git_branch() {
@@ -141,6 +162,11 @@ pkgs.mkShell {
     echo "   - Persistent SSH key: $NIX_SSH_KEY"
     echo "   - GitHub CLI: $(gh --version 2>/dev/null || echo 'not found')"
     echo "   - Git branch display: enabled"
+    echo "   - Hot reload: air (run 'air' in project root)"
+    echo "   - Mock generation: mockery --all"
+    echo "   - Test skeletons: gen_tests"
+    echo "   - Task runner: task (use Taskfile.yml for workflows)"
+    echo "   - Fuzzy Git: Use 'git brf' for interactive branches"
     echo
   '';
 }
