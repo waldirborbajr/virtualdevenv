@@ -1,7 +1,0 @@
-/* Bootstrap */
-@import 'bootstrap/dist/css/bootstrap.css';
-
-/* Tailwind CSS */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
