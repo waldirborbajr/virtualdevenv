@@ -76,18 +76,33 @@ pkgs.mkShell {
       SSH_OK=true
     fi
 
+    # Set up useful Git aliases (global, idempotent)
+    echo "⚙️ Setting up useful Git aliases..."
+    git config --global alias.st status
+    git config --global alias.br branch
+    git config --global alias.co checkout
+    git config --global alias.sw switch
+    git config --global alias.cm commit
+    git config --global alias.psh push
+    git config --global alias.pl pull
+    git config --global alias.df diff
+    git config --global alias.lg "log --oneline --graph --decorate"
+    git config --global alias.unstage "reset HEAD --"
+    git config --global alias.last "log -1 HEAD"
+    echo "✅ Git aliases configured (use 'git st', 'git sw <branch>', etc.)"
+
     # Simplified git branch function
     parse_git_branch() {
       git branch 2>/dev/null | grep '^\*' | cut -d' ' -f2-
     }
 
-    # Simplified git status function
+    # Simplified git status function with colors
     git_status_symbol() {
       if git rev-parse --git-dir >/dev/null 2>&1; then
         if git diff --quiet --cached 2>/dev/null && git diff --quiet 2>/dev/null; then
-          echo "✔"
+          echo "\[\e[32m\]✔\[\e[0m\]"
         else
-          echo "✗"
+          echo "\[\e[31m\]✗\[\e[0m\]"
         fi
       else
         echo ""
