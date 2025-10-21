@@ -1,30 +1,70 @@
 { pkgs ? import <nixpkgs> {} }:
 
+let
+  phpWithExtensions = pkgs.php83.withExtensions ({ enabled, all }: enabled ++ [
+    all.pdo_mysql
+    all.mysqli
+    all.pdo_pgsql
+    all.redis
+    all.sqlite3
+  ]);
+in
+
 pkgs.mkShell {
   name = "php-dev-shell";
 
   buildInputs = with pkgs; [
-    php83
-    composer
-    phpunit10
-    php-cs-fixer
-    phpstan
+    # PHP 8.3 with database extensions
+    phpWithExtensions
+    
+    # PHP tools from stable channel
+    php83Packages.composer
+    
+    # Database
+    redis
+    sqlite
+    
+    # System tools
     git
-    gh          # GitHub CLI
+    gh
     openssh
     curl
+    wget
     jq
     gnumake
     bashInteractive
     neovim
-    go-task     # Task runner for projects
-    fzf         # Fuzzy finder for Git
+    go-task
+    fzf
+    silver-searcher
+    fd
+    bat
+    eza
+    ripgrep
+    tmux
+    htop
   ];
+
+  # Environment variables
+  env = {
+    PHP_MEMORY_LIMIT = "2G";
+    PHP_MAX_EXECUTION_TIME = "300";
+    PHP_IDE_CONFIG = "serverName=localhost";
+    
+    # Composer
+    COMPOSER_MEMORY_LIMIT = "2G";
+    COMPOSER_ALLOW_SUPERUSER = "1";
+    
+    # Xdebug
+    XDEBUG_MODE = "develop,debug,coverage";
+    XDEBUG_CONFIG = "client_host=127.0.0.1 client_port=9003";
+  };
 
   shellHook = ''
     export EDITOR="nvim"
     export NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
+    # SSH Key setup
     export NIX_SSH_KEY="$HOME/.ssh/nix_shell_id_ed25519"
 
     if [ ! -d "$HOME/.ssh" ]; then
@@ -67,8 +107,8 @@ pkgs.mkShell {
       SSH_OK=true
     fi
 
-    # Set up useful Git aliases (global, idempotent)
-    echo "⚙️ Setting up useful Git aliases..."
+    # Advanced Git configuration
+    echo "⚙️ Setting up advanced Git configuration..."
     git config --global alias.st status
     git config --global alias.br branch
     git config --global alias.co checkout
@@ -77,21 +117,42 @@ pkgs.mkShell {
     git config --global alias.psh push
     git config --global alias.pl pull
     git config --global alias.df diff
-    git config --global alias.lg "log --oneline --graph --decorate"
+    git config --global alias.lg "log --oneline --graph --decorate -20"
     git config --global alias.unstage "reset HEAD --"
     git config --global alias.last "log -1 HEAD"
     git config --global alias.brf "branch --list | fzf | xargs git switch"
-    echo "✅ Git aliases configured (use 'git st', 'git sw <branch>', 'git brf' for fuzzy branches, etc.)"
+    git config --global alias.cleanup "!git fetch --prune && git branch -vv | grep ': gone]' | awk '{print \$1}' | xargs -r git branch -D"
+    git config --global alias.wip "!git add -A && git commit -m 'WIP'"
+    git config --global core.editor "nvim"
+    git config --global init.defaultBranch "main"
+    git config --global pull.rebase false
 
-    # FZF configuration
-    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border"
+    # Advanced FZF configuration
+    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --preview-window=right:60%"
+    export FZF_DEFAULT_COMMAND="fd --type f --hidden --follow --exclude .git"
 
-    # Simplified git branch function
+    # Useful PHP development aliases
+    alias phpunit="./vendor/bin/phpunit"
+    alias pest="./vendor/bin/pest"
+    alias pint="./vendor/bin/pint"
+    alias phpstan="./vendor/bin/phpstan"
+    alias psalm="./vendor/bin/psalm"
+
+    # Helper functions
+    php-server() {
+      local port=''${1:-8000}
+      php -S localhost:$port -t public/
+    }
+
+    composer-update-all() {
+      composer update --with-dependencies
+    }
+
+    # Improved Git functions
     parse_git_branch() {
       git branch 2>/dev/null | grep '^\*' | cut -d' ' -f2-
     }
 
-    # Simplified git status function with colors
     git_status_symbol() {
       if git rev-parse --git-dir >/dev/null 2>&1; then
         if git diff --quiet --cached 2>/dev/null && git diff --quiet 2>/dev/null; then
@@ -104,7 +165,6 @@ pkgs.mkShell {
       fi
     }
 
-    # Set PS1 with proper escaping
     set_ps1() {
       local current_dir="''${PWD##*/}"
       local branch=""
@@ -117,30 +177,44 @@ pkgs.mkShell {
       
       if [ -n "$branch" ]; then
         if [ "$SSH_OK" = true ]; then
-          PS1="\[\e[32m\][php-shell]\[\e[0m\]:~/$current_dir \[\e[34m\]$branch\[\e[0m\] $status\$ "
+          PS1="\[\e[32m\][php83-dev]\[\e[0m\]:~/$current_dir \[\e[34m\]$branch\[\e[0m\] $status\$ "
         else
-          PS1="\[\e[32m\][php-shell]\[\e[0m\]:~/$current_dir \[\e[31m\]NO SSH KEY!\[\e[0m\]\$ "
+          PS1="\[\e[32m\][php83-dev]\[\e[0m\]:~/$current_dir \[\e[31m\]NO SSH KEY!\[\e[0m\]\$ "
         fi
       else
-        PS1="\[\e[32m\][php-shell]\[\e[0m\]:~/$current_dir \$ "
+        PS1="\[\e[32m\][php83-dev]\[\e[0m\]:~/$current_dir \$ "
       fi
     }
 
-    # Use PROMPT_COMMAND to update PS1 dynamically
     export PROMPT_COMMAND="set_ps1"
 
+    # Service initialization
+    echo "🐳 Starting development services..."
+    
+    # Start Redis if not running
+    if ! pgrep redis-server > /dev/null; then
+      redis-server --daemonize yes
+      echo "✅ Redis started"
+    fi
+
     echo
-    echo "🚀 PHP development shell ready!"
-    echo "   - PHP: $(php -v 2>/dev/null | head -1 || echo 'not found')"
-    echo "   - Composer: $(composer --version 2>/dev/null || echo 'not found')"
-    echo "   - Neovim config: $NVIM_CONFIG_DIR"
-    echo "   - Persistent SSH key: $NIX_SSH_KEY"
-    echo "   - GitHub CLI: $(gh --version 2>/dev/null || echo 'not found')"
-    echo "   - Git branch display: enabled"
-    echo "   - Linting: php-cs-fixer, phpstan"
-    echo "   - Testing: phpunit"
-    echo "   - Task runner: task (use Taskfile.yml for workflows)"
-    echo "   - Fuzzy Git: Use 'git brf' for interactive branches"
+    echo "🚀 PHP 8.3 Development Environment Ready!"
+    echo "   - PHP: $(php -v 2>/dev/null | head -1)"
+    echo "   - Composer: $(composer --version 2>/dev/null | head -1)"
+    echo "   - Databases: Redis, SQLite (with MySQL, PostgreSQL connectivity)"
+    echo
+    echo "🛠️ Tools Available:"
+    echo "   - Dependency Management: Composer"
+    echo
+    echo "📝 Useful commands:"
+    echo "   php-server      - Start PHP development server"
+    echo "   composer-update-all - Update Composer dependencies"
+    echo
+    echo "ℹ️ Additional PHP tools (e.g., phpunit, phpstan, psalm, php-cs-fixer) can be installed via Composer:"
+    echo "   composer require phpunit/phpunit --dev"
+    echo "   composer require phpstan/phpstan --dev"
+    echo "   composer require vimeo/psalm --dev"
+    echo "   composer require friendsofphp/php-cs-fixer --dev"
     echo
   '';
 }
