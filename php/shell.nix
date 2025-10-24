@@ -50,7 +50,7 @@ pkgs.mkShell {
     COMPOSER_ALLOW_SUPERUSER = "1";
     COMPOSER_PROCESS_TIMEOUT = "1800";
     COMPOSER_NO_INTERACTION = "1";
-    COMPOSER_CACHE_DIR = "$HOME/.cache/composer";
+    COMPOSER_CACHE_DIR = "$PWD/.cache/composer";
     XDEBUG_MODE = "develop,debug,coverage";
     XDEBUG_CONFIG = "client_host=127.0.0.1 client_port=9003";
   };
@@ -59,11 +59,11 @@ pkgs.mkShell {
     export EDITOR="nvim"
     export NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
-    # Ensure Composer cache directory exists
-    mkdir -p "$HOME/.cache/composer"
-    chmod 700 "$HOME/.cache/composer"
+    # Ensure project-local Composer cache directory exists
+    mkdir -p "$PWD/.cache/composer"
+    chmod 700 "$PWD/.cache/composer"
 
-    # SSH Key setup
+    # SSH Key setup (remains in $HOME)
     export NIX_SSH_KEY="$HOME/.ssh/nix_shell_id_ed25519"
 
     if [ ! -d "$HOME/.ssh" ]; then
@@ -106,7 +106,7 @@ pkgs.mkShell {
       SSH_OK=true
     fi
 
-    # Advanced Git configuration
+    # Advanced Git configuration (stored in default $HOME/.gitconfig)
     echo "⚙️ Setting up advanced Git configuration..."
     git config --global alias.st status
     git config --global alias.br branch
@@ -229,7 +229,7 @@ pkgs.mkShell {
     echo "   - Databases: Redis, SQLite (com conectividade MySQL/PostgreSQL)"
     echo
     echo "🛠️ Tools Available:"
-    echo "   - Dependency Management: Composer"
+    echo "   - Dependency Management: Composer (cache em $PWD/.cache/composer)"
     echo "   - CSS: Tailwind CLI (standalone, sem Node.js)"
     echo "   - HTML: tidy para validação/lint"
     echo "   - Watchers: entr para automação de rebuilds"
