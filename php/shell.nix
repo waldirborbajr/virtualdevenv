@@ -141,7 +141,7 @@ pkgs.mkShell {
     # Helper functions
     php-server() {
       local port=''${1:-8000}
-      php -S localhost:$port -t public/
+      php -S localhost:$port -t src/
     }
 
     composer-update-all() {
@@ -207,7 +207,7 @@ pkgs.mkShell {
     echo "   - Dependency Management: Composer"
     echo
     echo "📝 Useful commands:"
-    echo "   php-server      - Start PHP development server"
+    echo "   php-server      - Start PHP development server (from src/)"
     echo "   composer-update-all - Update Composer dependencies"
     echo
     echo "ℹ️ Additional PHP tools (e.g., phpunit, phpstan, psalm, php-cs-fixer) can be installed via Composer:"
