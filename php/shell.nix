@@ -145,7 +145,7 @@ pkgs.mkShell {
     }
 
     composer-update-all() {
-      composer update --with-dependencies --prefer-dist --optimize-autoloader
+      composer update --with-dependencies --optimize-autoloader
     }
 
     # Funções para Tailwind (compilar e watch)
@@ -162,11 +162,15 @@ pkgs.mkShell {
       ls src/*.php src/*.html src/*.css | entr -r php-server
     }
 
-    # Install parallel download plugin if not already installed
-    if [ ! -d "$COMPOSER_HOME/vendor/composer/paravel" ]; then
-      echo "📦 Installing Composer parallel download plugin..."
-      composer global require composer/paravel
-    fi
+    # Configure Composer for optimal performance
+    echo "⚡ Configuring Composer for optimal performance..."
+    composer config --global process-timeout 1800
+    composer config --global discard-changes true
+    composer config --global sort-packages true
+    composer config --global optimize-autoloader true
+
+    # Set environment variable for Composer
+    export COMPOSER_DISCARD_CHANGES=true
 
     # Improved Git functions
     parse_git_branch() {
@@ -225,18 +229,18 @@ pkgs.mkShell {
     echo "   - Databases: Redis, SQLite (com conectividade MySQL/PostgreSQL)"
     echo
     echo "🛠️ Tools Available:"
-    echo "   - Dependency Management: Composer (com downloads paralelos)"
+    echo "   - Dependency Management: Composer"
     echo "   - CSS: Tailwind CLI (standalone, sem Node.js)"
     echo "   - HTML: tidy para validação/lint"
     echo "   - Watchers: entr para automação de rebuilds"
     echo
     echo "📝 Useful commands:"
-    echo "   php-server      - Start PHP development server (de src/)"
-    echo "   composer-update-all - Update Composer dependencies (otimizado)"
-    echo "   tailwind-build  - Compilar Tailwind CSS (ex.: de input.css para styles.css)"
-    echo "   tailwind-watch  - Watch e recompile Tailwind em tempo real"
-    echo "   html-lint file.html - Lintar arquivo HTML"
-    echo "   watch-rebuild   - Watch arquivos e restart server (use em paralelo com tailwind-watch)"
+    echo "   - php-server      - Start PHP development server (de src/)"
+    echo "   - composer-update-all - Update Composer dependencies (otimizado)"
+    echo "   - tailwind-build  - Compilar Tailwind CSS (ex.: de input.css para styles.css)"
+    echo "   - tailwind-watch  - Watch e recompile Tailwind em tempo real"
+    echo "   - html-lint file.html - Lintar arquivo HTML"
+    echo "   - watch-rebuild   - Watch arquivos e restart server (use em paralelo com tailwind-watch)"
     echo
     echo "ℹ️ Dicas para setup:"
     echo "   - Para Tailwind: Crie tailwind.config.js e input.css no projeto."
