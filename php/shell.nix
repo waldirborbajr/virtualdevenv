@@ -14,17 +14,10 @@ pkgs.mkShell {
   name = "php-dev-shell";
 
   buildInputs = with pkgs; [
-    # PHP 8.3 with database extensions
     phpWithExtensions
-    
-    # PHP tools from stable channel
     php83Packages.composer
-    
-    # Database
     redis
     sqlite
-    
-    # System tools
     git
     gh
     openssh
@@ -45,17 +38,15 @@ pkgs.mkShell {
     htop
   ];
 
-  # Environment variables
   env = {
     PHP_MEMORY_LIMIT = "2G";
     PHP_MAX_EXECUTION_TIME = "300";
     PHP_IDE_CONFIG = "serverName=localhost";
-    
-    # Composer
-    COMPOSER_MEMORY_LIMIT = "2G";
+    COMPOSER_MEMORY_LIMIT = "-1"; # Changed to unlimited for large projects
     COMPOSER_ALLOW_SUPERUSER = "1";
-    
-    # Xdebug
+    COMPOSER_PROCESS_TIMEOUT = "1800"; # Increased timeout to 30 minutes
+    COMPOSER_NO_INTERACTION = "1"; # Avoid interactive prompts
+    COMPOSER_CACHE_DIR = "$HOME/.cache/composer"; # Explicit cache directory
     XDEBUG_MODE = "develop,debug,coverage";
     XDEBUG_CONFIG = "client_host=127.0.0.1 client_port=9003";
   };
@@ -63,6 +54,10 @@ pkgs.mkShell {
   shellHook = ''
     export EDITOR="nvim"
     export NVIM_CONFIG_DIR="$HOME/.config/nvim"
+
+    # Ensure Composer cache directory exists
+    mkdir -p "$COMPOSER_CACHE_DIR"
+    chmod 700 "$COMPOSER_CACHE_DIR"
 
     # SSH Key setup
     export NIX_SSH_KEY="$HOME/.ssh/nix_shell_id_ed25519"
@@ -145,8 +140,14 @@ pkgs.mkShell {
     }
 
     composer-update-all() {
-      composer update --with-dependencies
+      composer update --with-dependencies --prefer-dist --optimize-autoloader
     }
+
+    # Install parallel download plugin if not already installed
+    if [ ! -d "$COMPOSER_HOME/vendor/composer/paravel" ]; then
+      echo "📦 Installing Composer parallel download plugin..."
+      composer global require composer/paravel
+    fi
 
     # Improved Git functions
     parse_git_branch() {
@@ -204,11 +205,11 @@ pkgs.mkShell {
     echo "   - Databases: Redis, SQLite (with MySQL, PostgreSQL connectivity)"
     echo
     echo "🛠️ Tools Available:"
-    echo "   - Dependency Management: Composer"
+    echo "   - Dependency Management: Composer (with parallel downloads)"
     echo
     echo "📝 Useful commands:"
     echo "   php-server      - Start PHP development server (from src/)"
-    echo "   composer-update-all - Update Composer dependencies"
+    echo "   composer-update-all - Update Composer dependencies (optimized)"
     echo
     echo "ℹ️ Additional PHP tools (e.g., phpunit, phpstan, psalm, php-cs-fixer) can be installed via Composer:"
     echo "   composer require phpunit/phpunit --dev"
