@@ -141,7 +141,7 @@ pkgs.mkShell {
     # Helper functions
     php-server() {
       local port=''${1:-8000}
-      php -S localhost:$port -t src/
+      php -S localhost:$port -t public/
     }
 
     composer-update-all() {
@@ -235,7 +235,7 @@ pkgs.mkShell {
     echo "   - Watchers: entr para automação de rebuilds"
     echo
     echo "📝 Useful commands:"
-    echo "   - php-server      - Start PHP development server (de src/)"
+    echo "   - php-server      - Start PHP development server (de public/)"
     echo "   - composer-update-all - Update Composer dependencies (otimizado)"
     echo "   - tailwind-build  - Compilar Tailwind CSS (ex.: de input.css para styles.css)"
     echo "   - tailwind-watch  - Watch e recompile Tailwind em tempo real"
