@@ -7,6 +7,7 @@ let
     all.pdo_pgsql
     all.redis
     all.sqlite3
+    all.xdebug  # Adicionado para debugging em PHP puro
   ]);
 in
 
@@ -36,17 +37,20 @@ pkgs.mkShell {
     ripgrep
     tmux
     htop
+    tailwindcss  # Adicionado para compilar Tailwind CSS sem Node.js
+    html-tidy  # Adicionado para validar/lintar HTML
+    entr  # Adicionado para watch de arquivos (ex.: rebuild automático)
   ];
 
   env = {
     PHP_MEMORY_LIMIT = "2G";
     PHP_MAX_EXECUTION_TIME = "300";
     PHP_IDE_CONFIG = "serverName=localhost";
-    COMPOSER_MEMORY_LIMIT = "-1"; # Changed to unlimited for large projects
+    COMPOSER_MEMORY_LIMIT = "-1";
     COMPOSER_ALLOW_SUPERUSER = "1";
-    COMPOSER_PROCESS_TIMEOUT = "1800"; # Increased timeout to 30 minutes
-    COMPOSER_NO_INTERACTION = "1"; # Avoid interactive prompts
-    COMPOSER_CACHE_DIR = "$HOME/.cache/composer"; # Explicit cache directory
+    COMPOSER_PROCESS_TIMEOUT = "1800";
+    COMPOSER_NO_INTERACTION = "1";
+    COMPOSER_CACHE_DIR = "$HOME/.cache/composer";
     XDEBUG_MODE = "develop,debug,coverage";
     XDEBUG_CONFIG = "client_host=127.0.0.1 client_port=9003";
   };
@@ -132,6 +136,7 @@ pkgs.mkShell {
     alias pint="./vendor/bin/pint"
     alias phpstan="./vendor/bin/phpstan"
     alias psalm="./vendor/bin/psalm"
+    alias html-lint="tidy -errors -quiet"  # Alias simples para lintar HTML
 
     # Helper functions
     php-server() {
@@ -141,6 +146,20 @@ pkgs.mkShell {
 
     composer-update-all() {
       composer update --with-dependencies --prefer-dist --optimize-autoloader
+    }
+
+    # Funções para Tailwind (compilar e watch)
+    tailwind-build() {
+      tailwindcss -i src/input.css -o public/styles.css --minify
+    }
+
+    tailwind-watch() {
+      tailwindcss -i src/input.css -o public/styles.css --watch
+    }
+
+    # Exemplo de watch com entr para rebuild PHP/HTML/CSS
+    watch-rebuild() {
+      ls src/*.php src/*.html src/*.css | entr -r php-server
     }
 
     # Install parallel download plugin if not already installed
@@ -199,23 +218,34 @@ pkgs.mkShell {
     fi
 
     echo
-    echo "🚀 PHP 8.3 Development Environment Ready!"
-    echo "   - PHP: $(php -v 2>/dev/null | head -1)"
+    echo "🚀 PHP 8.3 Development Environment Ready! (Otimizado para PHP puro com HTML + Tailwind/jQuery)"
+    echo "   - PHP: $(php -v 2>/dev/null | head -1) (com Xdebug para debugging)"
     echo "   - Composer: $(composer --version 2>/dev/null | head -1)"
-    echo "   - Databases: Redis, SQLite (with MySQL, PostgreSQL connectivity)"
+    echo "   - Tailwind CSS: $(tailwindcss --help | head -1)"
+    echo "   - Databases: Redis, SQLite (com conectividade MySQL/PostgreSQL)"
     echo
     echo "🛠️ Tools Available:"
-    echo "   - Dependency Management: Composer (with parallel downloads)"
+    echo "   - Dependency Management: Composer (com downloads paralelos)"
+    echo "   - CSS: Tailwind CLI (standalone, sem Node.js)"
+    echo "   - HTML: tidy para validação/lint"
+    echo "   - Watchers: entr para automação de rebuilds"
     echo
     echo "📝 Useful commands:"
-    echo "   php-server      - Start PHP development server (from src/)"
-    echo "   composer-update-all - Update Composer dependencies (optimized)"
+    echo "   php-server      - Start PHP development server (de src/)"
+    echo "   composer-update-all - Update Composer dependencies (otimizado)"
+    echo "   tailwind-build  - Compilar Tailwind CSS (ex.: de input.css para styles.css)"
+    echo "   tailwind-watch  - Watch e recompile Tailwind em tempo real"
+    echo "   html-lint file.html - Lintar arquivo HTML"
+    echo "   watch-rebuild   - Watch arquivos e restart server (use em paralelo com tailwind-watch)"
     echo
-    echo "ℹ️ Additional PHP tools (e.g., phpunit, phpstan, psalm, php-cs-fixer) can be installed via Composer:"
-    echo "   composer require phpunit/phpunit --dev"
-    echo "   composer require phpstan/phpstan --dev"
-    echo "   composer require vimeo/psalm --dev"
-    echo "   composer require friendsofphp/php-cs-fixer --dev"
+    echo "ℹ️ Dicas para setup:"
+    echo "   - Para Tailwind: Crie tailwind.config.js e input.css no projeto."
+    echo "   - Para jQuery: Use CDN nos seus HTML/PHP."
+    echo "   - Instale ferramentas PHP extras via Composer:"
+    echo "     composer require phpunit/phpunit --dev"
+    echo "     composer require phpstan/phpstan --dev"
+    echo "     composer require vimeo/psalm --dev"
+    echo "     composer require friendsofphp/php-cs-fixer --dev"
     echo
   '';
 }
