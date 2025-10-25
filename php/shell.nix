@@ -37,7 +37,6 @@ pkgs.mkShell {
     ripgrep
     tmux
     htop
-    tailwindcss  # Adicionado para compilar Tailwind CSS sem Node.js
     html-tidy  # Adicionado para validar/lintar HTML
     entr  # Adicionado para watch de arquivos (ex.: rebuild automático)
 # Monitoramento e debugging
@@ -156,20 +155,11 @@ pkgs.mkShell {
     # Helper functions
     php-server() {
       local port=''${1:-8000}
-      php -S localhost:$port -t src/
+      php -S localhost:$port -t public/
     }
 
     composer-update-all() {
       composer update --with-dependencies --optimize-autoloader
-    }
-
-    # Funções para Tailwind (compilar e watch)
-    tailwind-build() {
-      tailwindcss -i src/input.css -o public/styles.css --minify
-    }
-
-    tailwind-watch() {
-      tailwindcss -i src/input.css -o public/styles.css --watch
     }
 
     # Exemplo de watch com entr para rebuild PHP/HTML/CSS
@@ -237,28 +227,22 @@ pkgs.mkShell {
     fi
 
     echo
-    echo "🚀 PHP 8.3 Development Environment Ready! (Otimizado para PHP puro com HTML + Tailwind/jQuery)"
+    echo "🚀 PHP 8.3 Development Environment Ready! (Otimizado para PHP puro com HTML)"
     echo "   - PHP: $(php -v 2>/dev/null | head -1) (com Xdebug para debugging)"
     echo "   - Composer: $(composer --version 2>/dev/null | head -1)"
-    echo "   - Tailwind CSS: $(tailwindcss --help | head -1)"
     echo "   - Databases: Redis, SQLite (com conectividade MySQL/PostgreSQL)"
     echo
     echo "🛠️ Tools Available:"
     echo "   - Dependency Management: Composer (cache em $PWD/.cache/composer)"
-    echo "   - CSS: Tailwind CLI (standalone, sem Node.js)"
     echo "   - HTML: tidy para validação/lint"
     echo "   - Watchers: entr para automação de rebuilds"
     echo
     echo "📝 Useful commands:"
     echo "   - php-server      - Start PHP development server (de src/)"
     echo "   - composer-update-all - Update Composer dependencies (otimizado)"
-    echo "   - tailwind-build  - Compilar Tailwind CSS (ex.: de input.css para styles.css)"
-    echo "   - tailwind-watch  - Watch e recompile Tailwind em tempo real"
     echo "   - html-lint file.html - Lintar arquivo HTML"
-    echo "   - watch-rebuild   - Watch arquivos e restart server (use em paralelo com tailwind-watch)"
     echo
     echo "ℹ️ Dicas para setup:"
-    echo "   - Para Tailwind: Crie tailwind.config.js e input.css no projeto."
     echo "   - Para jQuery: Use CDN nos seus HTML/PHP."
     echo "   - Instale ferramentas PHP extras via Composer:"
     echo "     composer require phpunit/phpunit --dev"
