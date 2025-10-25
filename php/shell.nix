@@ -152,6 +152,9 @@ pkgs.mkShell {
     alias psalm="./vendor/bin/psalm"
     alias html-lint="tidy -errors -quiet"  # Alias simples para lintar HTML
 
+    alias nv="nvim"
+    alias lz="lazygit"
+
     # Helper functions
     php-server() {
       local port=''${1:-8000}
