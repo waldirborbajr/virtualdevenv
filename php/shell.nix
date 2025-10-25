@@ -40,6 +40,21 @@ pkgs.mkShell {
     tailwindcss  # Adicionado para compilar Tailwind CSS sem Node.js
     html-tidy  # Adicionado para validar/lintar HTML
     entr  # Adicionado para watch de arquivos (ex.: rebuild automático)
+# Monitoramento e debugging
+    lnav  # Log file navigator
+    httpie  # CLI HTTP client
+    jless  # JSON viewer
+    yq  # YAML processor (como jq para YAML)
+# Segurança
+    sops  # Secrets management
+    gnupg  # Para encriptação
+# Utilitários do sistema
+    inotify-tools  # Melhor watch de arquivos
+    pv  # Progress bar para pipes
+    moreutils  # Utilitários Unix adicionais
+    ranger  # File manager no terminal
+    tree  # Exibir árvore de diretórios
+
   ];
 
   env = {
