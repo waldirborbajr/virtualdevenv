@@ -1,7 +1,7 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  phpWithExtensions = pkgs.php83.withExtensions ({ enabled, all }: enabled ++ [
+  phpWithExtensions = pkgs.php84.withExtensions ({ enabled, all }: enabled ++ [
     all.pdo_mysql
     all.mysqli
     all.pdo_pgsql
@@ -16,7 +16,7 @@ pkgs.mkShell {
 
   buildInputs = with pkgs; [
     phpWithExtensions
-    php83Packages.composer
+    php84Packages.composer
     redis
     sqlite
     git
@@ -151,6 +151,7 @@ pkgs.mkShell {
     alias phpstan="./vendor/bin/phpstan"
     alias psalm="./vendor/bin/psalm"
     alias html-lint="tidy -errors -quiet"  # Alias simples para lintar HTML
+    alias php-s="php -S localhost:8000"  # Alias para iniciar o servidor PHP de desenvolvimento
 
     alias nv="nvim"
     alias lz="lazygit"
@@ -242,6 +243,7 @@ pkgs.mkShell {
     echo
     echo "📝 Useful commands:"
     echo "   - php-server      - Start PHP development server (de src/)"
+    echo "   - php-s           - Start PHP development server (shorthand: php -S localhost:8000)"
     echo "   - composer-update-all - Update Composer dependencies (otimizado)"
     echo "   - html-lint file.html - Lintar arquivo HTML"
     echo
